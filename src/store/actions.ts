@@ -18,6 +18,20 @@ const injectedWeb3Provider = new ethers.providers.Web3Provider(
   injectedEthereumProvider,
 )
 
+const persistSaltToLocalStorage = (salt: string, contractAddr: string): void => {
+  let existingSalt = JSON.parse(window.localStorage.getItem('salt') ?? '{}')
+  existingSalt[contractAddr] = salt
+  window.localStorage.setItem('salt', JSON.stringify(existingSalt))
+}
+
+const loadSaltFromLocalStorage = (contractAddr: HexPrefixed): BigNumber => {
+  let existingSalt = JSON.parse(window.localStorage.getItem('salt') ?? '{}')
+  if(existingSalt[contractAddr]) {
+    return BigNumber.from(existingSalt[contractAddr])
+  }
+  throw 'Salt used when creating the game instance is lost.'
+}
+
 export default {
   async connect(
     { commit, dispatch, state }: ActionContext<IRootState, IRootState>,
@@ -94,7 +108,7 @@ export default {
   ) {
     console.info('Deploy contract triggered !')
     try {
-      if (!SALT) return
+      if (!SALT) return alert('Salt no configured. Please re-load your page and allow a sign request')
       commit('setLoading', true)
       const signer = injectedWeb3Provider.getSigner()
       const deployArgs = {
@@ -111,8 +125,10 @@ export default {
         value: stakeAmount,
       })
       await commit('setContractAddress', RPS.address)
+      persistSaltToLocalStorage(SALT.toString(), RPS.address)
       await dispatch('loadContractState')
     } catch (error) {
+      alert((error as Error).message)
       console.log(error)
       console.log('Error while deploying contract !')
     }
@@ -126,6 +142,7 @@ export default {
       await commit('setContractAddress', contractAddress)
       await dispatch('loadContractState')
     } catch (error) {
+      alert((error as Error).message)
       console.log(error)
     }
   },
@@ -169,7 +186,7 @@ export default {
       commit('setContractState', contractState)
       await dispatch('computeGameStatus')
     } catch (error) {
-      console.log(error)
+      // console.log(error)
     }
   },
   async loadUserBalance({
@@ -212,6 +229,9 @@ export default {
   }: ActionContext<IRootState, IRootState>) {
     try {
       commit('setLoading', true)
+      if(!state.contractAddress) throw 'InValid Contract'
+      SALT = loadSaltFromLocalStorage(state.contractAddress)
+      console.log('Salt loaded back from local storage', SALT.toString())
       const connectedContract = await dispatch('getContract')
       const solveTx = await connectedContract.solve(state.selectedMove, SALT)
       await solveTx.wait()

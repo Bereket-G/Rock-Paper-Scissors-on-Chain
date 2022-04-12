@@ -152,6 +152,7 @@ export default defineComponent({
         if(!this.secondPlayer){
           return alert('Please set the second player address !')
         }
+        await store.dispatch('calculateAndSetSalt')
         await store.dispatch('createNewGameInstance', {stake: this.stake})
         await store.dispatch('loadContractState')
       }

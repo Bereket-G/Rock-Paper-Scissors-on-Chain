@@ -70,7 +70,6 @@ export default defineComponent({
 
     async function connectMM(){
       await store.dispatch('connect', true)
-      await store.dispatch('calculateAndSetSalt')
     }
     connectMM()
 
