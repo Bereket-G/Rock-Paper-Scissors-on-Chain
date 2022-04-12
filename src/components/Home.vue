@@ -68,9 +68,9 @@ export default defineComponent({
   setup() {
     const store = useStore()
 
-    function connectMM(){
-      store.dispatch('connect', true)
-      store.dispatch('calculateAndSetSalt')
+    async function connectMM(){
+      await store.dispatch('connect', true)
+      await store.dispatch('calculateAndSetSalt')
     }
     connectMM()
 

@@ -250,10 +250,17 @@ export default {
     commit('setLoading', false)
   },
   async calculateAndSetSalt({ state }: ActionContext<IRootState, IRootState>) {
-    const decryptedHex = await injectedEthereumProvider.request({
-      method: 'eth_requestAccounts',
-      params: ['RANDOM_ENCRYPTED_MESSAGE', state.account],
-    })
-    SALT = BigNumber.from(decryptedHex[0])
+    if (!state.account) return
+    try{
+      const signedOutput = await injectedEthereumProvider.request({
+        method: 'personal_sign',
+        params: [`SALT-${Date.now()}`,state.account],
+      })
+      SALT = BigNumber.from(signedOutput.substr(0,66))
+      console.log('SALT used', SALT.toString())
+    } catch (e) {
+      alert((e as Error).message)
+      console.log(e)
+    }
   },
 }
